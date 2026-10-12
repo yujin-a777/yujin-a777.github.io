@@ -18,6 +18,10 @@ p,li{margin:0}
 ul{margin:0;padding-left:20px}
 a{color:var(--accent);font-weight:600}
 a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+dl{display:grid;grid-template-columns:90px 1fr;gap:6px 12px;margin:0}
+dt{color:var(--mute)}
+dd{margin:0}
+nav.toc{display:flex;gap:14px;flex-wrap:wrap;margin:-12px 0 24px}
 footer{color:var(--mute);font-size:.85rem;margin-top:24px}
 </style>
 </head>
@@ -26,25 +30,66 @@ footer{color:var(--mute);font-size:.85rem;margin-top:24px}
   <h1>안녕하세요, 장유진입니다</h1>
   <p class="tag">국민대학교에서 경영정보를 공부하는 낙천적인 20살 학생</p>
 
-  <section>
-    <h2>저는 이런 사람이에요</h2>
-    <p>저는 20살이고, 국민대학교 경영정보학부에서 공부하는 학생입니다. 성격은 낙천적이라 어려운 일이 생겨도 일단 긍정적으로 받아들이고 해결 방법을 찾아보는 편입니다.</p>
+  <nav class="toc" aria-label="목차">
+    <a href="#info">기본 정보</a><a href="#about">소개</a><a href="#study">전공</a><a href="#interest">관심사</a><a href="#goal">앞으로</a><a href="#contact">연락처</a>
+  </nav>
+
+  <section id="info">
+    <h2>기본 정보</h2>
+    <dl>
+      <dt>이름</dt><dd>장유진</dd>
+      <dt>나이</dt><dd>20살</dd>
+      <dt>학교</dt><dd>국민대학교</dd>
+      <dt>소속</dt><dd>경영정보학부</dd>
+      <dt>하는 일</dt><dd>학생</dd>
+      <dt>성격</dt><dd>낙천적</dd>
+    </dl>
   </section>
 
-  <section>
+  <section id="about">
+    <h2>저는 이런 사람이에요</h2>
+    <p>저는 20살이고, 국민대학교 경영정보학부에서 공부하는 학생입니다. 성격은 낙천적이라 어려운 일이 생겨도 일단 긍정적으로 받아들이고 해결 방법을 찾아보는 편입니다.</p>
+    <p style="margin-top:8px">낙천적인 성격은 새로운 환경에서 사람들과 어울릴 때, 그리고 처음 해보는 일에 도전할 때 큰 힘이 됩니다. 실수해도 다음에 더 잘하면 된다고 생각하며 계속 해보는 것을 좋아합니다.</p>
+  </section>
+
+  <section id="study">
+    <h2>전공 이야기</h2>
+    <p>경영정보학부는 경영(비즈니스)과 정보기술(IT)을 함께 배우는 학부입니다. 기업이 데이터와 시스템을 활용해 더 나은 결정을 내리도록 돕는 방법을 공부합니다.</p>
+    <ul style="margin-top:8px">
+      <li>경영: 조직과 시장을 이해하는 기초</li>
+      <li>정보기술: 데이터와 시스템을 다루는 기본기</li>
+      <li>둘을 연결해 문제를 해결하는 경험</li>
+    </ul>
+  </section>
+
+  <section id="interest">
     <h2>관심 있는 것</h2>
     <ul>
-      <li>스포츠</li>
-      <li>음식</li>
+      <li><b>스포츠</b> — 경기를 보고 직접 즐기는 것을 좋아합니다. 응원하는 팀과 즐기는 종목은 앞으로 추가할게요.</li>
+      <li><b>음식</b> — 맛있는 음식을 먹고 새로운 메뉴를 찾아보는 것이 즐거움입니다. 좋아하는 음식과 맛집도 차차 소개할게요.</li>
+    </ul>
+  </section>
+
+  <section id="goal">
+    <h2>앞으로 해보고 싶은 것</h2>
+    <ul>
+      <li>전공 공부를 꾸준히 이어가며 기초를 탄탄히 다지기</li>
+      <li>이 홈페이지를 사진과 프로젝트로 하나씩 채워가기</li>
+      <li>배운 내용을 직접 만들어 보며 익히기</li>
     </ul>
   </section>
 
   <section>
+    <h2>이 홈페이지는</h2>
+    <p>수업 과제로 GitHub Pages에 올린 자기소개 페이지입니다. 한 번에 완성하지 않고 sprint마다 조금씩 발전시킬 예정입니다.</p>
+  </section>
+
+  <section id="contact">
     <h2>연락처</h2>
     <p>연락처는 비공개입니다.</p>
   </section>
 
-  <footer>다음 sprint: 사진 추가, 관심사 소개 확장</footer>
+  <footer>다음 sprint: 사진 추가, 좋아하는 팀·음식 소개</footer>
 </main>
 </body>
 </html>
