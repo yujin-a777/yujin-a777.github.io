@@ -3,92 +3,161 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>자기소개</title>
+<title>장유진 자기소개</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-:root{--bg:#eef2f6;--card:#fff;--text:#14213d;--mute:#5b6478;--accent:#2a7f8f;--line:#d6dde6}
-@media (prefers-color-scheme:dark){:root{--bg:#10151f;--card:#182030;--text:#e8ecf4;--mute:#9aa4b8;--accent:#6cc4d3;--line:#27324a}}
+:root{
+  --bg:#f4f5fa;--tile:#ffffff;--ink:#12142b;--mute:#5f6580;--line:#e3e5f0;
+  --vio:#5b4bff;--lime:#d4ff3f;--navy:#12142b;--navy-ink:#ffffff;--navy-mute:#b4b9d6;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0c0e1a;--tile:#161931;--ink:#f1f2fb;--mute:#a0a6c4;--line:#262a4a;
+  --vio:#8a7dff;--navy:#23276b;--navy-mute:#c3c7e6;
+}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo",sans-serif;line-height:1.7;padding:32px 16px}
-main{max-width:640px;margin:0 auto}
-h1{font-size:2.4rem;margin:0 0 4px;letter-spacing:-.02em}
-.tag{color:var(--mute);margin:0 0 28px;font-size:1.05rem}
-section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:16px}
-h2{font-size:1.05rem;margin:0 0 8px;color:var(--accent)}
-p,li{margin:0}
-ul{margin:0;padding-left:20px}
-a{color:var(--accent);font-weight:600}
-a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-dl{display:grid;grid-template-columns:90px 1fr;gap:6px 12px;margin:0}
-dt{color:var(--mute)}
-dd{margin:0}
-nav.toc{display:flex;gap:14px;flex-wrap:wrap;margin:-12px 0 24px}
-details{border-top:1px solid var(--line);padding:10px 0}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.7;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--vio);outline-offset:3px;border-radius:8px}
+.wrap{max-width:960px;margin:0 auto;padding:0 18px}
+
+/* 상단 메뉴 */
+.nav{position:sticky;top:12px;z-index:10;display:flex;justify-content:center;padding:12px 18px 0}
+.nav ul{display:flex;gap:2px;margin:0;padding:5px;list-style:none;background:color-mix(in srgb,var(--tile) 78%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px;overflow-x:auto;max-width:100%}
+.nav a{display:block;white-space:nowrap;text-decoration:none;font-size:.9rem;font-weight:600;padding:6px 14px;border-radius:999px;color:var(--mute);transition:background .15s,color .15s}
+.nav a:hover{background:var(--ink);color:var(--bg)}
+
+/* 히어로 */
+.hero{padding:64px 0 40px}
+.hero h1{margin:0 0 22px;font-weight:800;letter-spacing:-.04em;line-height:1.05;font-size:clamp(2.8rem,10vw,6rem)}
+.hero h1 span{display:block;font-size:.42em;font-weight:600;letter-spacing:-.02em;color:var(--mute);margin-bottom:10px}
+.tag{display:inline-block;margin:0;background:var(--lime);color:#12142b;font-weight:700;padding:9px 18px;border-radius:999px}
+
+/* 벤토 그리드 */
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;padding-bottom:40px}
+.tile{background:var(--tile);border-radius:28px;padding:26px 28px;grid-column:span 6;scroll-margin-top:80px}
+.s4{grid-column:span 4}.s3{grid-column:span 3}.s2{grid-column:span 2}
+h2{margin:0 0 12px;font-size:1.2rem;font-weight:800;letter-spacing:-.02em}
+p{margin:0 0 8px}
+ul{margin:0;padding:0;list-style:none}
+
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:0}
+.chip{background:var(--bg);border-radius:16px;padding:8px 16px;min-width:104px}
+.chip dt{font-size:.78rem;color:var(--mute)}
+.chip dd{margin:0;font-weight:700}
+
+.mbti{background:var(--lime);color:#12142b;display:flex;flex-direction:column;justify-content:space-between;min-height:150px}
+.mbti h2{margin:0;font-weight:600;font-size:1rem}
+.mbti strong{font-size:clamp(2.6rem,7vw,3.8rem);font-weight:800;letter-spacing:-.04em;line-height:1}
+
+.rows li{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.rows li:first-child{border-top:0}
+.rows b{flex:none;min-width:3.4em}
+.emo{font-size:1.5rem;line-height:1.3}
+
+.vio{background:var(--vio);color:#fff}
+.vio p{color:#fff}
+
+.dark{background:var(--navy);color:var(--navy-ink)}
+.goals li{display:flex;gap:14px;padding:12px 0;border-top:1px solid rgba(255,255,255,.14);color:var(--navy-mute)}
+.goals li:first-child{border-top:0}
+.goals b{flex:none;min-width:5.2em;color:var(--navy-ink)}
+.goals li.hot{background:var(--lime);color:#12142b;border:0;border-radius:18px;padding:14px 18px;margin:6px 0}
+.goals li.hot b{color:#12142b;font-size:1.05rem}
+
+details{border-top:1px solid var(--line)}
 details:first-of-type{border-top:0}
-summary{cursor:pointer;font-weight:600}
-summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-details p{margin-top:6px;color:var(--mute)}
-footer{color:var(--mute);font-size:.85rem;margin-top:24px}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px;padding:14px 0;font-weight:700}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";flex:none;width:28px;height:28px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-weight:600;transition:transform .2s}
+details[open] summary::after{content:"−";background:var(--vio);color:#fff}
+details p{color:var(--mute);margin:0 0 14px;max-width:60ch}
+
+footer{text-align:center;color:var(--mute);font-size:.9rem;padding:0 18px 56px}
+
+@media (max-width:760px){
+  .s4,.s3,.s2{grid-column:span 6}
+  .hero{padding-top:44px}
+  .tile{padding:22px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 </style>
 </head>
 <body>
-<main>
-  <h1>안녕하세요, 장유진입니다</h1>
+<nav class="nav" aria-label="목차">
+  <ul>
+    <li><a href="#info">기본 정보</a></li>
+    <li><a href="#about">소개</a></li>
+    <li><a href="#study">전공</a></li>
+    <li><a href="#interest">관심사</a></li>
+    <li><a href="#goal">앞으로</a></li>
+    <li><a href="#qna">Q&amp;A</a></li>
+    <li><a href="#contact">연락처</a></li>
+  </ul>
+</nav>
+
+<header class="wrap hero">
+  <h1><span>안녕하세요,</span>장유진입니다</h1>
   <p class="tag">국민대학교에서 경영정보를 공부하는 낙천적인 20살 학생</p>
+</header>
 
-  <nav class="toc" aria-label="목차">
-    <a href="#info">기본 정보</a><a href="#about">소개</a><a href="#study">전공</a><a href="#interest">관심사</a><a href="#goal">앞으로</a><a href="#qna">Q&amp;A</a><a href="#contact">연락처</a>
-  </nav>
+<main class="wrap grid">
+  <section class="tile s4" id="about">
+    <h2>저는 이런 사람이에요</h2>
+    <p>저는 20살이고, 국민대학교 경영정보학부에서 공부하는 학생입니다. 성격은 낙천적이라 어려운 일이 생겨도 일단 긍정적으로 받아들이고 해결 방법을 찾아보는 편입니다.</p>
+    <p>낙천적인 성격은 새로운 환경에서 사람들과 어울릴 때, 그리고 처음 해보는 일에 도전할 때 큰 힘이 됩니다. 실수해도 다음에 더 잘하면 된다고 생각하며 계속 해보는 것을 좋아합니다.</p>
+  </section>
 
-  <section id="info">
+  <section class="tile s2 mbti" aria-label="MBTI">
+    <h2>MBTI</h2>
+    <strong>ESTJ</strong>
+  </section>
+
+  <section class="tile" id="info">
     <h2>기본 정보</h2>
-    <dl>
-      <dt>이름</dt><dd>장유진</dd>
-      <dt>나이</dt><dd>20살</dd>
-      <dt>학교</dt><dd>국민대학교</dd>
-      <dt>소속</dt><dd>경영정보학부</dd>
-      <dt>하는 일</dt><dd>학생</dd>
-      <dt>성격</dt><dd>낙천적</dd>
-      <dt>MBTI</dt><dd>ESTJ</dd>
-      <dt>취미</dt><dd>영화 보기</dd>
+    <dl class="chips">
+      <div class="chip"><dt>이름</dt><dd>장유진</dd></div>
+      <div class="chip"><dt>나이</dt><dd>20살</dd></div>
+      <div class="chip"><dt>학교</dt><dd>국민대학교</dd></div>
+      <div class="chip"><dt>소속</dt><dd>경영정보학부</dd></div>
+      <div class="chip"><dt>하는 일</dt><dd>학생</dd></div>
+      <div class="chip"><dt>성격</dt><dd>낙천적</dd></div>
+      <div class="chip"><dt>MBTI</dt><dd>ESTJ</dd></div>
+      <div class="chip"><dt>취미</dt><dd>영화 보기</dd></div>
     </dl>
   </section>
 
-  <section id="about">
-    <h2>저는 이런 사람이에요</h2>
-    <p>저는 20살이고, 국민대학교 경영정보학부에서 공부하는 학생입니다. 성격은 낙천적이라 어려운 일이 생겨도 일단 긍정적으로 받아들이고 해결 방법을 찾아보는 편입니다.</p>
-    <p style="margin-top:8px">낙천적인 성격은 새로운 환경에서 사람들과 어울릴 때, 그리고 처음 해보는 일에 도전할 때 큰 힘이 됩니다. 실수해도 다음에 더 잘하면 된다고 생각하며 계속 해보는 것을 좋아합니다.</p>
-  </section>
-
-  <section id="study">
+  <section class="tile s3" id="study">
     <h2>전공 이야기</h2>
     <p>경영정보학부는 경영(비즈니스)과 정보기술(IT)을 함께 배우는 학부입니다. 기업이 데이터와 시스템을 활용해 더 나은 결정을 내리도록 돕는 방법을 공부합니다.</p>
-    <ul style="margin-top:8px">
-      <li>경영: 조직과 시장을 이해하는 기초 — 제가 앞으로 배우고 싶은 부분입니다</li>
-      <li>정보: 데이터와 시스템을 다루는 기본기 — 이것도 함께 배우고 싶습니다</li>
-      <li>둘을 연결해 문제를 해결하는 경험</li>
+    <ul class="rows">
+      <li><b>경영</b><span>조직과 시장을 이해하는 기초. 제가 앞으로 배우고 싶은 부분입니다.</span></li>
+      <li><b>정보</b><span>데이터와 시스템을 다루는 기본기. 이것도 함께 배우고 싶습니다.</span></li>
+      <li><b>연결</b><span>둘을 이어서 문제를 해결하는 경험</span></li>
     </ul>
   </section>
 
-  <section id="interest">
+  <section class="tile s3" id="interest">
     <h2>관심 있는 것</h2>
-    <ul>
-      <li><b>스포츠</b> — 그중에서도 축구를 가장 좋아합니다. 응원하는 팀과 즐겨 하는 포지션은 앞으로 추가할게요.</li>
-      <li><b>음식</b> — 맛있는 음식을 먹는 것이 즐거움이고, 그중에서도 떡볶이를 가장 좋아합니다.</li>
-      <li><b>영화</b> — 취미는 영화 보기입니다.</li>
+    <ul class="rows">
+      <li><span class="emo" aria-hidden="true">⚽</span><span><b>축구</b> 스포츠 중에서도 축구를 가장 좋아합니다. 응원하는 팀과 즐겨 하는 포지션은 앞으로 추가할게요.</span></li>
+      <li><span class="emo" aria-hidden="true">🍢</span><span><b>떡볶이</b> 맛있는 음식을 먹는 것이 즐거움이고, 그중에서도 떡볶이를 가장 좋아합니다.</span></li>
+      <li><span class="emo" aria-hidden="true">🎬</span><span><b>영화</b> 취미는 영화 보기입니다.</span></li>
     </ul>
   </section>
 
-  <section id="goal">
+  <section class="tile dark" id="goal">
     <h2>앞으로 해보고 싶은 것</h2>
-    <ul>
-      <li>경영정보학부에서 경영과 정보를 함께 배우기</li>
-      <li>전공 공부를 꾸준히 이어가며 기초를 탄탄히 다지기</li>
-      <li>이 홈페이지를 사진과 프로젝트로 하나씩 채워가기</li>
-      <li>배운 내용을 직접 만들어 보며 익히기</li>
+    <ul class="goals">
+      <li><b>경영+정보</b><span>경영정보학부에서 경영과 정보를 함께 배우기</span></li>
+      <li class="hot"><b>인턴</b><span>실제 회사에서 일해 보며 배운 내용을 써보기</span></li>
+      <li class="hot"><b>모의 창업</b><span>팀을 꾸려 아이디어를 사업으로 만들어 보기</span></li>
+      <li><b>꾸준히</b><span>전공 공부를 이어가며 기초를 탄탄히 다지기</span></li>
+      <li><b>채우기</b><span>이 홈페이지를 사진과 프로젝트로 하나씩 채워가기</span></li>
     </ul>
   </section>
 
-  <section id="qna">
+  <section class="tile" id="qna">
     <h2>나에 대한 Q&amp;A</h2>
     <details><summary>한 줄로 자신을 소개한다면?</summary><p>국민대학교에서 경영정보를 공부하는 낙천적인 20살 학생입니다.</p></details>
     <details><summary>어느 학교, 어떤 전공인가요?</summary><p>국민대학교 경영정보학부에 다니고 있습니다.</p></details>
@@ -100,20 +169,19 @@ footer{color:var(--mute);font-size:.85rem;margin-top:24px}
     <details><summary>이 전공을 선택한 이유는 무엇인가요?</summary><p>경영과 더불어 IT도 배우고 싶어서 선택했습니다.</p></details>
     <details><summary>요즘 가장 관심 있는 것은 무엇인가요?</summary><p>스포츠와 음식입니다.</p></details>
     <details><summary>스트레스는 어떻게 푸나요?</summary><p>잠을 많이 자면서 풉니다.</p></details>
-    <details><summary>앞으로 어떤 일을 해보고 싶나요?</summary><p>경영정보학부에서 경영과 정보를 함께 배우고 싶습니다.</p></details>
+    <details><summary>앞으로 어떤 일을 해보고 싶나요?</summary><p>경영정보학부에서 경영과 정보를 함께 배우고, 인턴과 모의 창업도 해보고 싶습니다.</p></details>
   </section>
 
-  <section>
+  <section class="tile s3 vio">
     <h2>이 홈페이지는</h2>
     <p>수업 과제로 GitHub Pages에 올린 자기소개 페이지입니다. 한 번에 완성하지 않고 sprint마다 조금씩 발전시킬 예정입니다.</p>
   </section>
 
-  <section id="contact">
+  <section class="tile s3" id="contact">
     <h2>연락처</h2>
     <p>연락처는 비공개입니다.</p>
   </section>
-
-  <footer>다음 sprint: 사진 추가, 응원하는 팀·영화 추천 소개</footer>
 </main>
+<footer>다음 sprint: 사진 추가, 응원하는 팀·영화 추천 소개</footer>
 </body>
 </html>
