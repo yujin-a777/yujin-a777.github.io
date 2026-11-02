@@ -1,0 +1,10 @@
+# Kiro settings (MCP tokens, OAuth credentials 등 민감 정보 포함)
+.kiro/settings/
+
+# 환경변수 (Supabase URL·anon key 등 — Netlify 대시보드 환경변수로 관리)
+.env
+.env.*
+!.env.example
+
+# 의존성 (나중에 npm 사용 시 대비)
+node_modules/

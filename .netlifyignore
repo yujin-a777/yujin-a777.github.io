@@ -1,0 +1,20 @@
+# Netlify 배포 시 공개 출력에서 제외할 파일/폴더
+# 문법: .gitignore와 동일
+
+# IDE·에이전트 설정
+.kiro/
+
+# 기획·개발 문서 (원하면 제거해서 공개 가능)
+docs/
+
+# 환경변수 (혹시 로컬에 생성될 경우 대비)
+.env
+.env.*
+!.env.example
+
+# 의존성 (나중에 npm 사용 시 대비)
+node_modules/
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
