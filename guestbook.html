@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>방명록 · 장유진</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* ── index.html 과 동일한 디자인 토큰 ── */
+:root{
+  --bg:#f4f5fa;--tile:#ffffff;--ink:#12142b;--mute:#5f6580;--line:#e3e5f0;
+  --vio:#5b4bff;--lime:#d4ff3f;--navy:#12142b;--navy-ink:#ffffff;--navy-mute:#b4b9d6;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0c0e1a;--tile:#161931;--ink:#f1f2fb;--mute:#a0a6c4;--line:#262a4a;
+  --vio:#8a7dff;--navy:#23276b;--navy-mute:#c3c7e6;
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.7;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--vio);outline-offset:3px;border-radius:8px}
+.wrap{max-width:720px;margin:0 auto;padding:0 18px}
+
+/* 상단 메뉴 (index.html 스타일 재사용) */
+.nav{position:sticky;top:12px;z-index:10;display:flex;justify-content:center;padding:12px 18px 0}
+.nav ul{display:flex;gap:2px;margin:0;padding:5px;list-style:none;background:color-mix(in srgb,var(--tile) 78%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px}
+.nav a{display:block;white-space:nowrap;text-decoration:none;font-size:.9rem;font-weight:600;padding:6px 14px;border-radius:999px;color:var(--mute);transition:background .15s,color .15s}
+.nav a:hover{background:var(--ink);color:var(--bg)}
+
+/* 히어로 */
+.hero{padding:52px 0 28px}
+.hero h1{margin:0 0 16px;font-weight:800;letter-spacing:-.04em;line-height:1.05;font-size:clamp(2.2rem,8vw,3.6rem)}
+.hero h1 span{display:block;font-size:.42em;font-weight:600;letter-spacing:-.02em;color:var(--mute);margin-bottom:8px}
+.hero p{margin:0;color:var(--mute)}
+
+/* 타일 공통 */
+.tile{background:var(--tile);border-radius:28px;padding:26px 28px;margin-bottom:16px}
+h2{margin:0 0 14px;font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+
+/* 입력 폼 */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:6px;font-weight:600}
+.field input,.field textarea{
+  width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
+  color:var(--ink);font:inherit;font-size:.95rem;padding:11px 15px;outline:none;transition:border-color .15s;resize:vertical
+}
+.field input:focus,.field textarea:focus{border-color:var(--vio)}
+.field textarea{min-height:92px}
+.counter{font-size:.76rem;color:var(--mute);text-align:right;margin-top:4px}
+
+.form-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.btn{
+  background:var(--vio);color:#fff;border:none;border-radius:999px;font:inherit;font-weight:700;
+  padding:11px 26px;cursor:pointer;transition:opacity .15s,transform .1s
+}
+.btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* 상태 메시지 */
+.status{font-size:.88rem;min-height:1.2em;flex:1}
+.status.saving{color:var(--mute)}
+.status.success{color:#1a9d5a}
+.status.failure{color:#e0423d}
+
+/* 방명록 목록 */
+.entries{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.entry{background:var(--bg);border-radius:18px;padding:16px 18px}
+.entry-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.entry-nick{font-weight:700;color:var(--vio);word-break:break-all}
+.entry-date{font-size:.76rem;color:var(--mute);flex:none}
+.entry-msg{margin:0;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.list-status{color:var(--mute);text-align:center;padding:20px;font-size:.9rem}
+.list-status.error{color:#e0423d}
+
+footer{text-align:center;color:var(--mute);font-size:.9rem;padding:8px 18px 56px}
+
+@media (max-width:760px){
+  .tile{padding:22px}
+  .hero{padding-top:40px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="메뉴">
+  <ul>
+    <li><a href="index.html">홈</a></li>
+    <li><a href="guestbook.html">방명록</a></li>
+  </ul>
+</nav>
+
+<header class="wrap hero">
+  <h1><span>남겨 주세요,</span>방명록</h1>
+  <p>다녀간 흔적을 남겨 주세요. 따뜻한 한마디가 큰 힘이 됩니다.</p>
+</header>
+
+<main class="wrap">
+
+  <!-- ── 글쓰기 폼 ── -->
+  <section class="tile" aria-label="방명록 작성">
+    <h2>글 남기기</h2>
+
+    <div class="field">
+      <label for="nick">닉네임</label>
+      <input id="nick" type="text" maxlength="20" placeholder="최대 20자" autocomplete="off">
+      <div class="counter"><span id="nick-count">0</span>/20</div>
+    </div>
+
+    <div class="field">
+      <label for="msg">내용</label>
+      <textarea id="msg" maxlength="500" placeholder="최대 500자"></textarea>
+      <div class="counter"><span id="msg-count">0</span>/500</div>
+    </div>
+
+    <div class="form-foot">
+      <button id="submit-btn" class="btn" disabled>남기기</button>
+      <span id="form-status" class="status" role="status" aria-live="polite"></span>
+    </div>
+  </section>
+
+  <!-- ── 글 목록 ── -->
+  <section class="tile" aria-label="방명록 목록">
+    <h2>남겨진 글</h2>
+    <ul id="entry-list" class="entries">
+      <li class="list-status">불러오는 중…</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>장유진의 홈페이지 · 방명록</footer>
+
+<script>
+"use strict";
+
+// ── API 엔드포인트 (같은 사이트의 Netlify Function) ──────────────────────────
+const API = "/api/guestbook";
+
+// ── DOM 참조 ──
+const nickInput  = document.getElementById("nick");
+const msgInput   = document.getElementById("msg");
+const nickCount  = document.getElementById("nick-count");
+const msgCount   = document.getElementById("msg-count");
+const submitBtn  = document.getElementById("submit-btn");
+const formStatus = document.getElementById("form-status");
+const listEl     = document.getElementById("entry-list");
+
+// ── 입력 글자 수 표시 + 버튼 활성/비활성 ──
+function refreshFormState() {
+  nickCount.textContent = nickInput.value.trim().length;
+  msgCount.textContent  = msgInput.value.trim().length;
+  // 닉네임·내용이 모두 비어 있지 않을 때만 버튼 활성화
+  const ok = nickInput.value.trim().length > 0 && msgInput.value.trim().length > 0;
+  submitBtn.disabled = !ok;
+}
+nickInput.addEventListener("input", refreshFormState);
+msgInput.addEventListener("input", refreshFormState);
+
+// ── 날짜 포맷 ──
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString("ko-KR", {
+    year: "numeric", month: "long", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 방명록 목록 조회 (최신순)
+// ══════════════════════════════════════════════════════════════════════════════
+async function loadEntries() {
+  listEl.innerHTML = `<li class="list-status">불러오는 중…</li>`;
+
+  try {
+    const res  = await fetch(API, { method: "GET" });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "조회 실패");
+
+    const entries = json.entries ?? [];
+    if (entries.length === 0) {
+      listEl.innerHTML = `<li class="list-status">아직 글이 없어요. 첫 번째 글을 남겨 주세요!</li>`;
+      return;
+    }
+
+    // 목록을 비우고 안전하게 다시 그림
+    listEl.innerHTML = "";
+    entries.forEach(row => {
+      const li = document.createElement("li");
+      li.className = "entry";
+
+      const head = document.createElement("div");
+      head.className = "entry-head";
+
+      const nick = document.createElement("span");
+      nick.className = "entry-nick";
+      nick.textContent = row.nickname;            // ← textContent 로 XSS 차단
+
+      const date = document.createElement("span");
+      date.className = "entry-date";
+      date.textContent = formatDate(row.created_at);
+
+      head.appendChild(nick);
+      head.appendChild(date);
+
+      const msg = document.createElement("p");
+      msg.className = "entry-msg";
+      msg.textContent = row.message;              // ← textContent 로 XSS 차단
+
+      li.appendChild(head);
+      li.appendChild(msg);
+      listEl.appendChild(li);
+    });
+
+  } catch (err) {
+    console.error("방명록 조회 실패:", err);
+    listEl.innerHTML = `<li class="list-status error">방명록을 불러올 수 없습니다.</li>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 방명록 글 저장
+// ══════════════════════════════════════════════════════════════════════════════
+async function submitEntry() {
+  const nickname = nickInput.value.trim();
+  const message  = msgInput.value.trim();
+
+  // 저장 중 상태
+  submitBtn.disabled = true;
+  formStatus.className = "status saving";
+  formStatus.textContent = "저장 중…";
+
+  try {
+    const res  = await fetch(API, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ nickname, message }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "저장 실패");
+
+    // 성공
+    formStatus.className = "status success";
+    formStatus.textContent = "글이 등록됐어요! 🎉";
+    nickInput.value = "";
+    msgInput.value  = "";
+    refreshFormState();
+    await loadEntries();   // 목록 갱신
+
+  } catch (err) {
+    // 실패 — 성공처럼 표시하지 않음
+    console.error("방명록 저장 실패:", err);
+    formStatus.className = "status failure";
+    formStatus.textContent = err.message || "저장에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+    submitBtn.disabled = false;
+  }
+}
+
+submitBtn.addEventListener("click", submitEntry);
+
+// ── 초기 로드 ──
+refreshFormState();
+loadEntries();
+</script>
+</body>
+</html>

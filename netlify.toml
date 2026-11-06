@@ -29,6 +29,19 @@
 
 # ─── SPA 폴백 없음 (MPA 구조이므로 각 .html 파일로 직접 라우팅) ──────
 
-# ─── 리디렉션: 없음 ───────────────────────────────────────────────────
-# GitHub Pages (yujin-a777.github.io) 와 Netlify URL 병행 운영 예정
+# ─── API 라우트 리다이렉션 ───────────────────────────────────────────
+# 프론트엔드에서 /api/scores 로 요청하면 Netlify Function 으로 전달
+# 서버 함수 경로(/.netlify/functions/)를 직접 노출하지 않음
+[[redirects]]
+  from   = "/api/scores"
+  to     = "/.netlify/functions/scores"
+  status = 200
+
+[[redirects]]
+  from   = "/api/guestbook"
+  to     = "/.netlify/functions/guestbook"
+  status = 200
+
+# ─── GitHub Pages 병행 운영 ──────────────────────────────────────────
+# GitHub Pages (yujin-a777.github.io) 와 Netlify URL 동시 운영
 # GitHub Pages 설정은 건드리지 않음

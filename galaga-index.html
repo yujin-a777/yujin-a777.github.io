@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Galaga — 장유진</title>
+  <style>
+    /* ── 기본 리셋 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      letter-spacing: 6px;
+      color: #00e5ff;
+      text-shadow: 0 0 12px #00e5ff;
+    }
+
+    /* ── 화면 전환 ── */
+    .screen { display: none; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 460px; }
+    .screen.active { display: flex; }
+
+    /* ── 시작 화면 ── */
+    #screen-start { padding: 10px; }
+
+    label { font-size: .9rem; color: #aaa; align-self: flex-start; }
+
+    .input-row { display: flex; gap: 8px; width: 100%; }
+
+    input[type="text"] {
+      flex: 1;
+      background: #111;
+      border: 1.5px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input[type="text"]:focus { border-color: #00e5ff; }
+
+    .error-msg {
+      font-size: .82rem;
+      color: #ff5555;
+      min-height: 1.1em;
+      align-self: flex-start;
+    }
+
+    button {
+      background: #00e5ff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 10px 22px;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    button:hover:not(:disabled) { opacity: .85; transform: translateY(-1px); }
+    button:disabled { background: #333; color: #666; cursor: not-allowed; }
+    button.secondary {
+      background: transparent;
+      color: #aaa;
+      border: 1.5px solid #444;
+    }
+    button.secondary:hover:not(:disabled) { border-color: #aaa; color: #fff; }
+
+    /* ── 리더보드 ── */
+    .leaderboard { width: 100%; }
+    .leaderboard h2 { font-size: 1rem; color: #888; margin-bottom: 8px; letter-spacing: 2px; }
+
+    .lb-list {
+      list-style: none;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .lb-list li {
+      display: grid;
+      grid-template-columns: 1.6rem 1fr auto;
+      gap: 8px;
+      align-items: center;
+      font-size: .88rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #0d0d0d;
+    }
+    .lb-list li:nth-child(1) { background: #1a1400; }
+    .lb-list li:nth-child(2) { background: #0f1318; }
+    .lb-list li:nth-child(3) { background: #0d1209; }
+    .lb-rank { color: #555; font-size: .8rem; }
+    .lb-nick { color: #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { color: #00e5ff; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .lb-status { font-size: .8rem; color: #555; text-align: center; padding: 8px; }
+
+    /* ── 게임 화면 ── */
+    #screen-game { position: relative; }
+
+    #hud {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: .95rem;
+      padding: 0 4px;
+    }
+    #hud span { color: #00e5ff; font-weight: 700; }
+
+    canvas {
+      border: 1.5px solid #1a3a4a;
+      box-shadow: 0 0 24px #00e5ff33;
+      display: block;
+    }
+
+    #game-msg {
+      font-size: 1.1rem;
+      color: #ffcc00;
+      min-height: 1.4em;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    /* ── 게임 오버 화면 ── */
+    #screen-over { text-align: center; }
+    #final-score-val {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #00e5ff;
+      text-shadow: 0 0 16px #00e5ff;
+      letter-spacing: 2px;
+    }
+    #save-status {
+      font-size: .95rem;
+      min-height: 1.3em;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    #save-status.saving  { color: #aaa; }
+    #save-status.success { color: #4cff91; background: #0a2016; }
+    #save-status.failure { color: #ff5555; background: #200a0a; }
+
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  </style>
+</head>
+<body>
+
+<h1>GALAGA</h1>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- 시작 화면                                          -->
+<!-- ══════════════════════════════════════════════════ -->
+<section id="screen-start" class="screen active" aria-label="게임 시작">
+
+  <label for="nickname-input">닉네임을 입력하세요</label>
+  <div class="input-row">
+    <input
+      id="nickname-input"
+      type="text"
+      maxlength="12"
+      placeholder="최대 12자"
+      autocomplete="off"
+      aria-describedby="nickname-error"
+    />
+    <button id="btn-start" disabled>시작</button>
+  </div>
+  <span id="nickname-error" class="error-msg" role="alert" aria-live="polite"></span>
+
+  <div class="leaderboard" aria-label="리더보드">
+    <h2>🏆 TOP 10</h2>
+    <ol id="lb-list" class="lb-list">
+      <li><span class="lb-status">불러오는 중…</span></li>
+    </ol>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- 게임 화면                                          -->
+<!-- ══════════════════════════════════════════════════ -->
+<section id="screen-game" class="screen" aria-label="게임 플레이">
+
+  <div id="hud">
+    <div>SCORE: <span id="score-display">0</span></div>
+    <div>LIVES: <span id="lives-display">3</span></div>
+    <div id="nick-display" style="color:#888"></div>
+  </div>
+
+  <canvas id="game-canvas" width="460" height="520"></canvas>
+  <div id="game-msg" role="status" aria-live="polite"></div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- 게임 오버 화면                                     -->
+<!-- ══════════════════════════════════════════════════ -->
+<section id="screen-over" class="screen" aria-label="게임 종료">
+
+  <p style="color:#888;font-size:.9rem">최종 점수</p>
+  <div id="final-score-val">0</div>
+  <div id="save-status" class="saving" role="status" aria-live="polite"></div>
+
+  <div class="btn-row">
+    <button id="btn-retry">다시 하기</button>
+    <button id="btn-change-nick" class="secondary">닉네임 변경</button>
+  </div>
+
+  <div class="leaderboard" aria-label="갱신된 리더보드">
+    <h2>🏆 TOP 10</h2>
+    <ol id="lb-list-over" class="lb-list">
+      <li><span class="lb-status">불러오는 중…</span></li>
+    </ol>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- 게임 + API 로직                                    -->
+<!-- ══════════════════════════════════════════════════ -->
+<script>
+"use strict";
+
+// ── API 엔드포인트 (같은 사이트의 Netlify Function) ─────────────────────────
+const API = "/api/scores";   // netlify.toml 리다이렉트로 /api/scores → /.netlify/functions/scores
+
+// ── 안전한 텍스트 출력 헬퍼 (XSS 방지) ──────────────────────────────────────
+// innerHTML 을 절대 사용하지 않고, textContent 또는 이 함수로만 화면에 문자를 씁니다.
+function escapeText(str) {
+  const d = document.createElement("div");
+  d.textContent = String(str);
+  return d.innerHTML; // 이미 escape된 안전한 HTML 문자열
+}
+
+// ── 화면 전환 ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 리더보드
+// ══════════════════════════════════════════════════════════════════════════════
+async function loadLeaderboard(listId) {
+  const listEl = document.getElementById(listId);
+  listEl.innerHTML = `<li><span class="lb-status">불러오는 중…</span></li>`;
+
+  try {
+    const res  = await fetch(API, { method: "GET" });
+    const json = await res.json();
+
+    if (!res.ok) throw new Error(json.error ?? "조회 실패");
+
+    const scores = json.scores ?? [];
+    if (scores.length === 0) {
+      listEl.innerHTML = `<li><span class="lb-status">아직 기록이 없어요. 첫 번째가 되세요!</span></li>`;
+      return;
+    }
+
+    // 상위 10개만 표시 (서버는 50개 내려줌)
+    listEl.innerHTML = scores.slice(0, 10).map((row, i) => {
+      const rank  = i + 1;
+      const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : rank;
+      const date  = new Date(row.created_at).toLocaleDateString("ko-KR", { month:"short", day:"numeric" });
+      // textContent 방식으로 동적 데이터를 삽입해 XSS 차단
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <span class="lb-rank">${medal}</span>
+        <span class="lb-nick"></span>
+        <span class="lb-score"></span>`;
+      li.querySelector(".lb-nick").textContent  = row.nickname;          // ← textContent
+      li.querySelector(".lb-score").textContent = `${row.score.toLocaleString()}점  ${date}`; // ← textContent
+      return li.outerHTML;
+    }).join("");
+
+  } catch (err) {
+    console.error("리더보드 로드 실패:", err);
+    listEl.innerHTML = `<li><span class="lb-status" style="color:#ff5555">리더보드를 불러올 수 없습니다.</span></li>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 점수 저장
+// ══════════════════════════════════════════════════════════════════════════════
+async function saveScore(nickname, score) {
+  const statusEl = document.getElementById("save-status");
+
+  // 저장 중 상태
+  statusEl.className = "saving";
+  statusEl.textContent = "저장 중…";
+
+  try {
+    const res  = await fetch(API, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ nickname, score }),
+    });
+    const json = await res.json();
+
+    if (!res.ok) throw new Error(json.error ?? "저장 실패");
+
+    // 성공
+    statusEl.className   = "success";
+    statusEl.textContent = "저장됐어요! 🎉";
+    await loadLeaderboard("lb-list-over");
+
+  } catch (err) {
+    // 실패 — 성공으로 속이지 않음
+    console.error("점수 저장 실패:", err);
+    statusEl.className   = "failure";
+    statusEl.textContent = `저장에 실패했습니다. 점수: ${score.toLocaleString()}점 (스크린샷으로 기록해 두세요)`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 닉네임 유효성 검사 (클라이언트)
+// ══════════════════════════════════════════════════════════════════════════════
+const NICK_REGEX = /^[^\s<>"';]{1,12}$/;
+
+function validateNickname(value) {
+  const trimmed = value.trim();
+  if (trimmed.length === 0)  return "닉네임을 입력해 주세요.";
+  if (trimmed.length > 12)   return "최대 12자까지 입력할 수 있어요.";
+  if (!NICK_REGEX.test(trimmed)) return "특수문자( < > \" ' ; )와 공백은 사용할 수 없어요.";
+  return "";
+}
+
+// ── 닉네임 입력 이벤트 ───────────────────────────────────────────────────────
+const nickInput  = document.getElementById("nickname-input");
+const nickError  = document.getElementById("nickname-error");
+const btnStart   = document.getElementById("btn-start");
+
+nickInput.addEventListener("input", () => {
+  const msg = validateNickname(nickInput.value);
+  nickError.textContent = msg;                 // textContent — XSS 안전
+  btnStart.disabled = msg.length > 0 || nickInput.value.trim().length === 0;
+});
+
+nickInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !btnStart.disabled) btnStart.click();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Galaga 게임 로직
+// ══════════════════════════════════════════════════════════════════════════════
+const canvas = document.getElementById("game-canvas");
+const ctx    = canvas.getContext("2d");
+const W = canvas.width, H = canvas.height;
+
+// ── 상태 ─────────────────────────────────────────────────────────────────────
+let gameState;  // 'idle' | 'playing' | 'over'
+let score, lives, currentNick;
+let player, bullets, enemies, enemyBullets;
+let frameId;
+let lastTime = 0;
+let enemyDir = 1, enemyMoveTimer = 0, enemyShootTimer = 0;
+let enemyDropQueued = false;
+
+const PLAYER_W = 32, PLAYER_H = 24;
+const BULLET_W = 3,  BULLET_H = 10;
+const ENEMY_W  = 28, ENEMY_H  = 22;
+const ENEMY_COLS = 10, ENEMY_ROWS = 4;
+const ENEMY_PAD_X = 40, ENEMY_PAD_Y = 60;
+const ENEMY_GAP_X = 38, ENEMY_GAP_Y = 30;
+const PLAYER_SPEED  = 4;
+const BULLET_SPEED  = 7;
+const ENEMY_BULLET_SPEED = 3;
+
+const keys = {};
+document.addEventListener("keydown", e => { keys[e.key] = true; });
+document.addEventListener("keyup",   e => { keys[e.key] = false; });
+
+// ── 초기화 ───────────────────────────────────────────────────────────────────
+function initGame() {
+  score = 0;
+  lives = 3;
+  bullets = [];
+  enemyBullets = [];
+  enemyDir = 1;
+  enemyMoveTimer = 0;
+  enemyShootTimer = 0;
+  enemyDropQueued = false;
+
+  player = {
+    x: W / 2 - PLAYER_W / 2,
+    y: H - PLAYER_H - 16,
+    shooting: false,
+    shootCooldown: 0,
+  };
+
+  enemies = [];
+  for (let r = 0; r < ENEMY_ROWS; r++) {
+    for (let c = 0; c < ENEMY_COLS; c++) {
+      enemies.push({
+        x: ENEMY_PAD_X + c * ENEMY_GAP_X,
+        y: ENEMY_PAD_Y + r * ENEMY_GAP_Y,
+        alive: true,
+        type: r,   // 0=top, 3=bottom (점수 차등)
+      });
+    }
+  }
+
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById("score-display").textContent = score.toLocaleString();
+  document.getElementById("lives-display").textContent = lives;
+  document.getElementById("nick-display").textContent  = currentNick ?? "";
+}
+
+// ── 입력 처리 ─────────────────────────────────────────────────────────────────
+function handleInput() {
+  if (keys["ArrowLeft"]  || keys["a"] || keys["A"]) player.x -= PLAYER_SPEED;
+  if (keys["ArrowRight"] || keys["d"] || keys["D"]) player.x += PLAYER_SPEED;
+  player.x = Math.max(0, Math.min(W - PLAYER_W, player.x));
+
+  if (player.shootCooldown > 0) { player.shootCooldown--; return; }
+  if (keys[" "] || keys["ArrowUp"] || keys["z"] || keys["Z"]) {
+    bullets.push({ x: player.x + PLAYER_W / 2 - BULLET_W / 2, y: player.y - BULLET_H });
+    player.shootCooldown = 15;
+  }
+}
+
+// ── 업데이트 ──────────────────────────────────────────────────────────────────
+function update() {
+  handleInput();
+
+  // 플레이어 총알 이동
+  bullets = bullets.filter(b => b.y + BULLET_H > 0);
+  bullets.forEach(b => b.y -= BULLET_SPEED);
+
+  // 적 이동
+  enemyMoveTimer++;
+  const moveInterval = Math.max(8, 30 - enemies.filter(e => e.alive).length);
+  if (enemyMoveTimer >= moveInterval) {
+    enemyMoveTimer = 0;
+    const alive = enemies.filter(e => e.alive);
+    if (alive.length === 0) { nextWave(); return; }
+
+    const leftmost  = Math.min(...alive.map(e => e.x));
+    const rightmost = Math.max(...alive.map(e => e.x + ENEMY_W));
+
+    if (enemyDropQueued) {
+      enemies.forEach(e => { if (e.alive) e.y += 14; });
+      enemyDropQueued = false;
+    } else {
+      enemies.forEach(e => { if (e.alive) e.x += 14 * enemyDir; });
+      if (rightmost + 14 > W - 4 || leftmost - 14 < 4) {
+        enemyDir *= -1;
+        enemyDropQueued = true;
+      }
+    }
+  }
+
+  // 적 총알 발사
+  enemyShootTimer++;
+  if (enemyShootTimer >= 55) {
+    enemyShootTimer = 0;
+    const alive = enemies.filter(e => e.alive);
+    if (alive.length > 0) {
+      const shooter = alive[Math.floor(Math.random() * alive.length)];
+      enemyBullets.push({ x: shooter.x + ENEMY_W / 2, y: shooter.y + ENEMY_H });
+    }
+  }
+
+  // 적 총알 이동
+  enemyBullets = enemyBullets.filter(b => b.y < H);
+  enemyBullets.forEach(b => b.y += ENEMY_BULLET_SPEED);
+
+  // 충돌: 플레이어 총알 vs 적
+  bullets.forEach(b => {
+    enemies.forEach(e => {
+      if (!e.alive) return;
+      if (b.x < e.x + ENEMY_W && b.x + BULLET_W > e.x &&
+          b.y < e.y + ENEMY_H && b.y + BULLET_H > e.y) {
+        e.alive = false;
+        b.y = -999; // 총알 제거
+        const pts = [80, 60, 40, 20][e.type] ?? 10;
+        score += pts;
+        updateHUD();
+      }
+    });
+  });
+
+  // 충돌: 적 총알 vs 플레이어
+  enemyBullets.forEach(b => {
+    if (b.x < player.x + PLAYER_W && b.x + BULLET_W > player.x &&
+        b.y < player.y + PLAYER_H && b.y + BULLET_H > player.y) {
+      b.y = H + 99;
+      lives--;
+      updateHUD();
+      if (lives <= 0) { endGame(); }
+    }
+  });
+
+  // 적이 하단에 도달
+  enemies.forEach(e => {
+    if (e.alive && e.y + ENEMY_H >= player.y) { endGame(); }
+  });
+}
+
+function nextWave() {
+  enemies.forEach(e => { e.alive = true; e.y -= (ENEMY_ROWS * ENEMY_GAP_Y); });
+  score += 500;
+  updateHUD();
+}
+
+function endGame() {
+  gameState = "over";
+  cancelAnimationFrame(frameId);
+  showScreen("screen-over");
+  document.getElementById("final-score-val").textContent = score.toLocaleString();
+  saveScore(currentNick, score);
+}
+
+// ── 그리기 ───────────────────────────────────────────────────────────────────
+const ENEMY_COLORS = ["#ff4444", "#ff9900", "#ffff00", "#aaffaa"];
+
+function draw() {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+
+  // 별
+  ctx.fillStyle = "#ffffff33";
+  for (let i = 0; i < 60; i++) {
+    // 결정적 패턴으로 별 위치 고정 (매 프레임 재계산 없이)
+    ctx.fillRect((i * 137 + 11) % W, (i * 97 + 23) % H, 1, 1);
+  }
+
+  // 플레이어
+  ctx.fillStyle = "#00e5ff";
+  ctx.fillRect(player.x, player.y, PLAYER_W, PLAYER_H);
+  // 기체 앞부분
+  ctx.fillRect(player.x + PLAYER_W / 2 - 3, player.y - 8, 6, 8);
+
+  // 플레이어 총알
+  ctx.fillStyle = "#ffffff";
+  bullets.forEach(b => ctx.fillRect(b.x, b.y, BULLET_W, BULLET_H));
+
+  // 적
+  enemies.forEach((e, i) => {
+    if (!e.alive) return;
+    ctx.fillStyle = ENEMY_COLORS[e.type % ENEMY_COLORS.length];
+    ctx.fillRect(e.x, e.y, ENEMY_W, ENEMY_H);
+    // 눈 두 개
+    ctx.fillStyle = "#000";
+    ctx.fillRect(e.x + 5, e.y + 5, 5, 5);
+    ctx.fillRect(e.x + ENEMY_W - 10, e.y + 5, 5, 5);
+  });
+
+  // 적 총알
+  ctx.fillStyle = "#ff4444";
+  enemyBullets.forEach(b => ctx.fillRect(b.x - 1, b.y, 3, 8));
+}
+
+// ── 게임 루프 ─────────────────────────────────────────────────────────────────
+function gameLoop(ts) {
+  if (gameState !== "playing") return;
+  frameId = requestAnimationFrame(gameLoop);
+  update();
+  draw();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 버튼 이벤트
+// ══════════════════════════════════════════════════════════════════════════════
+
+// 시작
+btnStart.addEventListener("click", () => {
+  const msg = validateNickname(nickInput.value);
+  if (msg) { nickError.textContent = msg; return; }
+
+  currentNick = nickInput.value.trim();
+  gameState   = "playing";
+  initGame();
+  showScreen("screen-game");
+  document.getElementById("game-msg").textContent = "";
+  frameId = requestAnimationFrame(gameLoop);
+});
+
+// 다시 하기
+document.getElementById("btn-retry").addEventListener("click", () => {
+  gameState = "playing";
+  initGame();
+  showScreen("screen-game");
+  frameId = requestAnimationFrame(gameLoop);
+});
+
+// 닉네임 변경
+document.getElementById("btn-change-nick").addEventListener("click", () => {
+  showScreen("screen-start");
+  nickInput.value   = "";
+  nickError.textContent = "";
+  btnStart.disabled = true;
+});
+
+// 스페이스바 스크롤 방지
+window.addEventListener("keydown", e => {
+  if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+    e.preventDefault();
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 초기 리더보드 로드
+// ══════════════════════════════════════════════════════════════════════════════
+loadLeaderboard("lb-list");
+</script>
+</body>
+</html>
