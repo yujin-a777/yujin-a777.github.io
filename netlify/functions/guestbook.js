@@ -68,6 +68,25 @@ function validateInput(nickname, message) {
   return null; // 오류 없음
 }
 
+// ── 응답 본문을 안전하게 JSON 으로 파싱 ──────────────────────────────────────
+// Supabase REST 가 아니라 엉뚱한 곳(잘못된 SUPABASE_URL 등)으로 요청이 가면
+// JSON 이 아니라 HTML(<!DOCTYPE ...) 이 돌아올 수 있다. 그대로 JSON.parse 하면
+// 크래시하므로, 파싱 실패를 잡아 원인을 알 수 있는 형태로 반환한다.
+function safeParseJson(text) {
+  if (!text) return { ok: true, value: [] };
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch {
+    // 파싱 실패 — 응답 앞부분만 로그로 남겨 진단을 돕는다(비밀값 아님).
+    const preview = text.slice(0, 120).replace(/\s+/g, " ");
+    console.error(
+      "Supabase 응답이 JSON 이 아닙니다. SUPABASE_URL 설정을 확인하세요. 응답 미리보기:",
+      preview,
+    );
+    return { ok: false, value: null };
+  }
+}
+
 // ── Supabase REST API 헬퍼 ───────────────────────────────────────────────────
 async function supabaseFetch(path, options = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
@@ -80,8 +99,12 @@ async function supabaseFetch(path, options = {}) {
     },
   });
   const text = await res.text();
-  const data = text ? JSON.parse(text) : [];
-  return { ok: res.ok, status: res.status, data };
+  const parsed = safeParseJson(text);
+  if (!parsed.ok) {
+    // 응답이 JSON 이 아님(설정 오류 가능성) → 조회/저장 실패로 처리
+    return { ok: false, status: res.status || 502, data: null, parseError: true };
+  }
+  return { ok: res.ok, status: res.status, data: parsed.value };
 }
 
 // ── 전체 행 페이지네이션 조회 ────────────────────────────────────────────────
@@ -112,7 +135,12 @@ async function supabaseFetchAll(basePath, pageSize = 1000, hardCap = 100000) {
     }
 
     const text = await res.text();
-    const page = text ? JSON.parse(text) : [];
+    const parsed = safeParseJson(text);
+    if (!parsed.ok) {
+      // 응답이 JSON 이 아님(예: SUPABASE_URL 오류로 HTML 수신) → 실패 처리
+      return { ok: false, status: res.status || 502, data: all, parseError: true };
+    }
+    const page = Array.isArray(parsed.value) ? parsed.value : [];
     all.push(...page);
 
     // Content-Range 예: "0-999/1543" → 마지막 숫자가 전체 건수
@@ -150,15 +178,19 @@ exports.handler = async function (event) {
   if (event.httpMethod === "GET") {
     // created_at 내림차순 = 최신 글이 위로.
     // 단일 요청의 행 수 상한(기본 1000) 때문에 누락되지 않도록 페이지네이션으로 전체 조회.
-    const { ok, data } = await supabaseFetchAll(
+    const { ok, data, parseError } = await supabaseFetchAll(
       "/guestbook_entries?select=nickname,message,created_at&order=created_at.desc",
     );
 
     if (!ok) {
+      // parseError = 응답이 JSON 이 아님 → SUPABASE_URL 등 설정 오류 가능성
+      const message = parseError
+        ? "서버 설정 오류입니다. 관리자에게 문의해 주세요."
+        : "방명록을 불러오지 못했습니다.";
       return {
-        statusCode: 502,
+        statusCode: parseError ? 503 : 502,
         headers: HEADERS,
-        body: JSON.stringify({ error: "방명록을 불러오지 못했습니다." }),
+        body: JSON.stringify({ error: message }),
       };
     }
 
@@ -195,7 +227,7 @@ exports.handler = async function (event) {
     }
 
     // Supabase 에 INSERT
-    const { ok, data } = await supabaseFetch("/guestbook_entries", {
+    const { ok, data, parseError } = await supabaseFetch("/guestbook_entries", {
       method: "POST",
       prefer: "return=representation",
       body: JSON.stringify({
@@ -205,6 +237,14 @@ exports.handler = async function (event) {
     });
 
     if (!ok) {
+      if (parseError) {
+        // 응답이 JSON 이 아님 → SUPABASE_URL 등 설정 오류 가능성
+        return {
+          statusCode: 503,
+          headers: HEADERS,
+          body: JSON.stringify({ error: "서버 설정 오류입니다. 관리자에게 문의해 주세요." }),
+        };
+      }
       console.error("Supabase INSERT 실패:", data);
       return {
         statusCode: 502,
