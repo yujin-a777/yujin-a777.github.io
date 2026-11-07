@@ -1,7 +1,7 @@
 /**
  * Netlify Function: /api/guestbook
  *
- * GET  → 방명록 글 목록을 최신순으로 조회 (상위 100건)
+ * GET  → 방명록 글 목록을 최신순으로 조회 (페이지네이션으로 전체 조회, 누락 없음)
  * POST → 방명록 글 저장 (닉네임·내용 서버 검사 후 INSERT)
  *
  * 브라우저는 Supabase 에 직접 접근하지 않습니다.
@@ -28,21 +28,43 @@ const HEADERS = {
 const NICKNAME_MAX = 20;    // 닉네임 최대 길이
 const MESSAGE_MAX  = 500;   // 방명록 내용 최대 길이
 
+// 허용하지 않는 제어 문자(개행·탭 제외). 닉네임에는 개행·탭도 불허.
+// \u0000-\u001F, \u007F = C0 제어문자 + DEL
+const CONTROL_CHARS_ALL   = /[\u0000-\u001F\u007F]/;          // 모든 제어문자
+const CONTROL_CHARS_NO_WS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/; // 개행(\n)·탭(\t)·CR(\r)은 허용
+
 function validateInput(nickname, message) {
-  // 닉네임 검사
-  if (typeof nickname !== "string" || nickname.trim().length === 0) {
+  // ── 닉네임 검사 ──
+  if (typeof nickname !== "string") {
+    return "닉네임 형식이 올바르지 않아요.";
+  }
+  const nick = nickname.trim();
+  if (nick.length === 0) {
     return "닉네임을 입력해 주세요.";
   }
-  if (nickname.trim().length > NICKNAME_MAX) {
+  if (nick.length > NICKNAME_MAX) {
     return `닉네임은 최대 ${NICKNAME_MAX}자까지 입력할 수 있어요.`;
   }
-  // 내용 검사
-  if (typeof message !== "string" || message.trim().length === 0) {
+  if (CONTROL_CHARS_ALL.test(nick)) {
+    return "닉네임에 허용되지 않는 문자가 포함되어 있어요.";
+  }
+
+  // ── 내용 검사 ──
+  if (typeof message !== "string") {
+    return "내용 형식이 올바르지 않아요.";
+  }
+  const msg = message.trim();
+  if (msg.length === 0) {
     return "방명록 내용을 입력해 주세요.";
   }
-  if (message.trim().length > MESSAGE_MAX) {
+  if (msg.length > MESSAGE_MAX) {
     return `내용은 최대 ${MESSAGE_MAX}자까지 입력할 수 있어요.`;
   }
+  // 내용은 줄바꿈·탭을 허용하되 그 외 제어문자는 거절
+  if (CONTROL_CHARS_NO_WS.test(msg)) {
+    return "내용에 허용되지 않는 문자가 포함되어 있어요.";
+  }
+
   return null; // 오류 없음
 }
 
@@ -62,6 +84,51 @@ async function supabaseFetch(path, options = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
+// ── 전체 행 페이지네이션 조회 ────────────────────────────────────────────────
+// PostgREST(Supabase REST)는 한 응답에서 반환하는 행 수에 상한(기본 1000)이 있어
+// 단일 요청으로는 행이 누락될 수 있다. Range 헤더로 페이지를 넘기며 모두 모은다.
+// (집계·전체 목록이 조회 건수 제한 때문에 잘리지 않도록 보장)
+async function supabaseFetchAll(basePath, pageSize = 1000, hardCap = 100000) {
+  let from = 0;
+  const all = [];
+
+  while (from < hardCap) {
+    const to = from + pageSize - 1;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1${basePath}`, {
+      headers: {
+        "apikey":        SUPABASE_SERVICE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type":  "application/json",
+        "Range-Unit":    "items",
+        "Range":         `${from}-${to}`,
+        // count=exact 를 요청하면 Content-Range 에 전체 건수가 포함되어
+        // 더 가져올 행이 남았는지 판단할 수 있다.
+        "Prefer":        "count=exact",
+      },
+    });
+
+    if (!res.ok && res.status !== 206) {
+      return { ok: false, status: res.status, data: all };
+    }
+
+    const text = await res.text();
+    const page = text ? JSON.parse(text) : [];
+    all.push(...page);
+
+    // Content-Range 예: "0-999/1543" → 마지막 숫자가 전체 건수
+    const contentRange = res.headers.get("content-range") || "";
+    const total = Number((contentRange.split("/")[1] || "").trim());
+
+    // 다음 페이지가 없으면 종료
+    if (page.length < pageSize) break;
+    if (Number.isFinite(total) && from + page.length >= total) break;
+
+    from += pageSize;
+  }
+
+  return { ok: true, status: 200, data: all };
+}
+
 // ── 핸들러 ───────────────────────────────────────────────────────────────────
 exports.handler = async function (event) {
   // CORS preflight 요청 처리
@@ -79,11 +146,12 @@ exports.handler = async function (event) {
     };
   }
 
-  // ── GET: 방명록 목록 조회 (최신순) ────────────────────────────────────────
+  // ── GET: 방명록 목록 조회 (최신순, 전체) ──────────────────────────────────
   if (event.httpMethod === "GET") {
-    // created_at 내림차순 = 최신 글이 위로. 상위 100건 조회.
-    const { ok, data } = await supabaseFetch(
-      "/guestbook_entries?select=nickname,message,created_at&order=created_at.desc&limit=100",
+    // created_at 내림차순 = 최신 글이 위로.
+    // 단일 요청의 행 수 상한(기본 1000) 때문에 누락되지 않도록 페이지네이션으로 전체 조회.
+    const { ok, data } = await supabaseFetchAll(
+      "/guestbook_entries?select=nickname,message,created_at&order=created_at.desc",
     );
 
     if (!ok) {
@@ -97,7 +165,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: HEADERS,
-      body: JSON.stringify({ entries: data }),
+      body: JSON.stringify({ entries: data, count: data.length }),
     };
   }
 

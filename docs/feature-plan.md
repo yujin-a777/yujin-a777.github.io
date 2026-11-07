@@ -1,4 +1,158 @@
-# Feature Plan — Galaga 게임 (Option A: 닉네임 + 점수 저장)
+# Feature Plan — 방명록 (Option G1: 자유 입력 방명록) 〔최소 완성 버전〕
+
+> 작성일: 2026-11-07
+> 프로젝트: 2026 가을 유레카 프로젝트 (국민대학교 경영정보학부 장유진)
+> 선택 옵션: **Option G1 — 자유 입력 방명록 (로그인 없음), 현재 구현 그대로 명세화 + RLS 확정**
+> 배포 플랫폼: Netlify
+> 백엔드: Supabase (PostgreSQL + RLS)
+>
+> ℹ️ 이 문서는 두 기능 계획을 함께 담고 있습니다.
+> - 상단: **방명록 (G1)** — 이번에 확정한 최소 완성 기능
+> - 하단: **Galaga 게임 (Option A)** — 이전 기획, 보존됨
+
+---
+
+## G1-1. 관련 파일 (현재 구현 기준, 모두 존재 확인됨)
+
+| 파일 | 역할 |
+|------|------|
+| `guestbook.html` | 방명록 화면 (폼 + 목록), `/api/guestbook` 호출, 출력은 `textContent`로 XSS 차단 |
+| `netlify/functions/guestbook.js` | 서버 함수 (GET 목록·POST 저장), 서버 측 입력 검증, Supabase REST 호출 |
+| `netlify.toml` | `/api/guestbook` → `/.netlify/functions/guestbook` 리다이렉트, 보안 헤더 |
+| `index.html` | 내비게이션에 "방명록" 링크 연결됨 |
+
+> **원칙**: 새 프레임워크·새 의존성 없음. 기존 정적 HTML + Netlify Function 구조 그대로 사용.
+
+---
+
+## G1-2. 화면 구성 및 UI 요소
+
+### 작성 폼
+
+| 요소 | 종류 | 동작 |
+|------|------|------|
+| 닉네임 입력란 | `<input type="text" maxlength="20">` | 글자 수 카운터 0/20 |
+| 내용 입력란 | `<textarea maxlength="500">` | 글자 수 카운터 0/500 |
+| "남기기" 버튼 | `<button>` | 닉네임·내용이 모두 비어있지 않을 때만 활성화 |
+| 상태 메시지 | `<span role="status" aria-live="polite">` | 저장 중 / 성공 / 실패 표시 |
+
+### 글 목록
+
+| 요소 | 종류 | 동작 |
+|------|------|------|
+| 목록 | `<ul>` 카드 리스트 | 최신순(`created_at` 내림차순) 표시 |
+| 항목 | 닉네임 + 작성일시 + 내용 | 닉네임·내용은 `textContent`로 출력 (XSS 차단) |
+| 로드 상태 | `<li>` | "불러오는 중…" / "아직 글이 없어요" / 오류 메시지 |
+
+---
+
+## G1-3. 저장할 항목 (Supabase 테이블: `guestbook_entries`)
+
+```sql
+create table guestbook_entries (
+  id          uuid primary key default gen_random_uuid(),
+  nickname    text not null,
+  message     text not null,
+  created_at  timestamptz not null default now()
+);
+```
+
+---
+
+## G1-4. Supabase 저장·조회 설계 (브라우저는 Supabase에 직접 접근하지 않음)
+
+```
+guestbook.html (브라우저)
+    ↓ fetch /api/guestbook  (같은 사이트)
+netlify.toml redirect
+    ↓
+netlify/functions/guestbook.js  (SUPABASE_SERVICE_KEY 사용, 서버 전용)
+    ↓ REST  /rest/v1/guestbook_entries
+Supabase (PostgreSQL + RLS)
+```
+
+- 조회(GET): `select=nickname,message,created_at&order=created_at.desc&limit=100`
+- 저장(POST): `nickname`, `message` INSERT (서버에서 `trim()` 후 저장)
+
+### RLS 정책 (G1 확정 — service key만 통과, anon 직접 접근 차단)
+
+```sql
+alter table guestbook_entries enable row level security;
+-- anon·authenticated 역할에는 정책을 부여하지 않음 → 브라우저의 직접 접근 차단.
+-- 서버 함수는 service_role 키로 접근하므로 RLS를 우회한다(설계상 의도).
+```
+
+---
+
+## G1-5. 성공 / 실패 동작 명세
+
+### 저장 성공
+1. POST → 서버 검증 통과 → Supabase INSERT (201)
+2. "글이 등록됐어요! 🎉" 표시
+3. 입력란 비움, 목록 재조회·갱신
+
+### 저장 실패
+- 입력 검증 실패(400): 서버 메시지 그대로 표시, 성공처럼 보이지 않음, 버튼 재활성화
+- 서버·네트워크 오류(502/503): "저장에 실패했습니다. 잠시 후 다시 시도해 주세요." 표시, 버튼 재활성화
+
+### 목록 조회 실패
+- "방명록을 불러올 수 없습니다" 표시, 작성 폼은 정상 사용 가능
+
+---
+
+## G1-6. 접근 제한 설계 (자유 입력 = 로그인 없음)
+
+| 위협 | 대응 | 상태 |
+|------|------|------|
+| service key 노출 | Netlify 환경변수(`SUPABASE_SERVICE_KEY`)로만 관리, 브라우저로 전송 안 함 | ✅ 구현됨 |
+| 브라우저의 Supabase 직접 조작 | 모든 접근을 Netlify Function 경유로 강제 + RLS로 anon 직접 접근 차단 | ⬜ RLS 적용 필요 |
+| 빈값·과도한 길이 | 서버 측 검증 (닉네임 1~20자, 내용 1~500자) | ✅ 구현됨 |
+| XSS | 출력 시 `textContent` 사용 | ✅ 구현됨 |
+| 스팸 INSERT | 무료 플랜 기본 rate limit (추후 제출 간격 제한 권장) | ⬜ 추후 |
+
+---
+
+## G1-7. 검사 방법 (Acceptance Criteria)
+
+### AC-G1. 입력 검증
+- [ ] 닉네임·내용 중 하나라도 비어 있으면 "남기기" 버튼이 비활성화된다
+- [ ] 닉네임 21자 이상 / 내용 501자 이상은 서버가 400으로 거절한다
+- [ ] 공백만 입력 시 `trim()` 후 빈값으로 거절된다
+
+### AC-G2. 저장
+- [ ] POST 성공 시 `guestbook_entries`에 행이 추가된다
+- [ ] 저장된 닉네임·내용이 입력값과 일치한다
+- [ ] "글이 등록됐어요!" 메시지가 표시된다
+
+### AC-G3. 목록
+- [ ] 페이지 로드 시 최신순으로 글이 표시된다
+- [ ] 저장 성공 후 목록이 자동 갱신된다
+- [ ] 조회 실패 시 오류 메시지가 표시되고 폼은 정상 동작한다
+
+### AC-G4. 보안·격리
+- [ ] 브라우저 번들·공개 출력에 service key가 포함되지 않는다
+- [ ] 서버 함수(`netlify/functions/`)가 공개 publish 출력(`.`)에 복사되지 않는다
+- [ ] 닉네임에 `<script>` 입력 시 화면에 실행되지 않고 문자 그대로 표시된다
+
+### AC-G5. 기존 자산 보존
+- [ ] `index.html`·`pacman.html`·`galaga-index.html`이 기존과 동일하게 동작한다
+- [ ] GitHub Pages 설정이 변경되지 않는다
+
+---
+
+## G1-8. 배포 준비 (Netlify) — 현재 상태
+
+- 빌드 도구·프레임워크 없음(순수 정적). Node v24.22.1 / npm 11.19.1 확인됨.
+- `netlify.toml`: `publish = "."`, `command = ""`, `functions = "netlify/functions"`
+- `.netlifyignore`로 `.kiro/`, `docs/`, `.env*`, `node_modules/` 등 공개 제외
+- 서버 함수는 `netlify/functions/`에만 두고 publish 루트(`.`)에 복사하지 않음
+
+> **현재 상태**: 명세 확정(G1). 구현은 대부분 완료, RLS 적용 및 배포 설정만 남음. 커밋·push 미수행.
+
+---
+---
+
+# Feature Plan — Galaga 게임 (Option A: 닉네임 + 점수 저장) 〔이전 기획, 보존〕
 
 > 작성일: 2026-11-02  
 > 프로젝트: 2026 가을 유레카 프로젝트 (국민대학교 경영정보학부 장유진)  
