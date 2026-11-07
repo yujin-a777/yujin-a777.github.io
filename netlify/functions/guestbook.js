@@ -131,7 +131,9 @@ async function supabaseFetchAll(basePath, pageSize = 1000, hardCap = 100000) {
     });
 
     if (!res.ok && res.status !== 206) {
-      return { ok: false, status: res.status, data: all };
+      // Supabase 가 JSON 에러를 돌려준 경우(테이블 없음·RLS 등). 진단용으로 상세를 담는다.
+      const errText = await res.text();
+      return { ok: false, status: res.status, data: all, detail: errText.slice(0, 300) };
     }
 
     const text = await res.text();
@@ -178,7 +180,7 @@ exports.handler = async function (event) {
   if (event.httpMethod === "GET") {
     // created_at 내림차순 = 최신 글이 위로.
     // 단일 요청의 행 수 상한(기본 1000) 때문에 누락되지 않도록 페이지네이션으로 전체 조회.
-    const { ok, data, parseError } = await supabaseFetchAll(
+    const { ok, data, parseError, status, detail } = await supabaseFetchAll(
       "/guestbook_entries?select=nickname,message,created_at&order=created_at.desc",
     );
 
@@ -187,10 +189,16 @@ exports.handler = async function (event) {
       const message = parseError
         ? "서버 설정 오류입니다. 관리자에게 문의해 주세요."
         : "방명록을 불러오지 못했습니다.";
+      // 임시 디버그: ?debug=1 일 때만 Supabase 원본 에러를 노출 (문제 확인 후 제거 예정)
+      const isDebug = (event.queryStringParameters || {}).debug === "1";
+      const payload = { error: message };
+      if (isDebug) {
+        payload.debug = { supabaseStatus: status, parseError: !!parseError, detail: detail || null };
+      }
       return {
         statusCode: parseError ? 503 : 502,
         headers: HEADERS,
-        body: JSON.stringify({ error: message }),
+        body: JSON.stringify(payload),
       };
     }
 
