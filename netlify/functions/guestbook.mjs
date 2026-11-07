@@ -176,8 +176,8 @@ async function supabaseFetchAll(basePath, pageSize = 1000, hardCap = 100000) {
   return { ok: true, status: 200, data: all };
 }
 
-// ── 핸들러 ───────────────────────────────────────────────────────────────────
-exports.handler = async function (event) {
+// ── 핸들러 (기존 로직) ───────────────────────────────────────────────────────
+async function handler(event) {
   // CORS preflight 요청 처리
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: HEADERS, body: "" };
@@ -286,3 +286,44 @@ exports.handler = async function (event) {
     body: JSON.stringify({ error: "허용하지 않는 요청 방식이에요." }),
   };
 };
+
+// ── 신형 Netlify 함수 라우트(B 보강) ─────────────────────────────────────────
+// netlify.toml 의 리다이렉트에 의존하지 않고, 함수가 /api/guestbook 경로를
+// 직접 담당하도록 명시적으로 선언한다. (로컬 netlify dev·배포 양쪽에서 동작)
+//   - 기존 exports.handler(event) 로직은 그대로 재사용한다.
+//   - 아래 default export 가 Web Request → event 변환 → handler 호출 →
+//     handler 결과(statusCode/headers/body) 를 Web Response 로 변환한다.
+export const config = {
+  path: ["/api/guestbook", "/.netlify/functions/guestbook"],
+};
+
+export default async function (request) {
+  const url = new URL(request.url);
+
+  // 요청 본문(텍스트) 읽기 — GET/HEAD 에는 본문이 없다.
+  let rawBody = "";
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    rawBody = await request.text();
+  }
+
+  // 쿼리 파라미터를 event.queryStringParameters 형태로 변환
+  const queryStringParameters = {};
+  for (const [k, v] of url.searchParams.entries()) {
+    queryStringParameters[k] = v;
+  }
+
+  // 기존 handler 가 기대하는 event 객체 구성
+  const event = {
+    httpMethod: request.method,
+    body: rawBody,
+    queryStringParameters,
+    headers: Object.fromEntries(request.headers),
+  };
+
+  const result = await handler(event);
+
+  return new Response(result.body ?? "", {
+    status: result.statusCode ?? 200,
+    headers: result.headers ?? HEADERS,
+  });
+}
