@@ -232,8 +232,8 @@
 <script>
 "use strict";
 
-// ── API 엔드포인트 (같은 사이트의 Netlify Function) ─────────────────────────
-const API = "/api/scores";   // netlify.toml 리다이렉트로 /api/scores → /.netlify/functions/scores
+// ── API 엔드포인트 (같은 사이트의 서버 함수 /api/scores) ────────────────────
+const API = "/api/scores";   // Vercel api/scores.mjs 가 /api/scores 로 자동 매핑
 
 // ── 안전한 텍스트 출력 헬퍼 (XSS 방지) ──────────────────────────────────────
 // innerHTML 을 절대 사용하지 않고, textContent 또는 이 함수로만 화면에 문자를 씁니다.
