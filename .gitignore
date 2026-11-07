@@ -8,3 +8,6 @@
 
 # 의존성 (나중에 npm 사용 시 대비)
 node_modules/
+
+# Local Netlify folder
+.netlify
