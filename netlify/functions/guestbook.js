@@ -16,6 +16,24 @@
 const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
+// ── Supabase 인증 헤더 ───────────────────────────────────────────────────────
+// Supabase 키는 두 가지 형식이 있다.
+//   1) 신형: sb_secret_... / sb_publishable_...  → apikey 헤더로만 보내야 한다.
+//      이 키를 Authorization: Bearer 로 보내면 PostgREST 가 JWT 로 파싱하려다
+//      실패해 401 "Invalid API key" 가 난다.
+//   2) 레거시 JWT(eyJ...): apikey 와 Authorization: Bearer 둘 다 허용.
+// 아래 헬퍼는 키 형식을 보고 올바른 헤더만 구성한다.
+function supabaseAuthHeaders() {
+  const key = SUPABASE_SERVICE_KEY || "";
+  const isNewFormat = key.startsWith("sb_secret_") || key.startsWith("sb_publishable_");
+  const headers = { "apikey": key };
+  // 신형 키는 Bearer 로 보내지 않는다. 레거시 JWT 만 Bearer 로도 보낸다.
+  if (!isNewFormat) {
+    headers["Authorization"] = `Bearer ${key}`;
+  }
+  return headers;
+}
+
 // ── 공통 응답 헤더 ───────────────────────────────────────────────────────────
 const HEADERS = {
   "Access-Control-Allow-Origin":  "*",
@@ -92,8 +110,7 @@ async function supabaseFetch(path, options = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
     ...options,
     headers: {
-      "apikey":        SUPABASE_SERVICE_KEY,
-      "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+      ...supabaseAuthHeaders(),
       "Content-Type":  "application/json",
       "Prefer":        options.prefer ?? "",
     },
@@ -119,8 +136,7 @@ async function supabaseFetchAll(basePath, pageSize = 1000, hardCap = 100000) {
     const to = from + pageSize - 1;
     const res = await fetch(`${SUPABASE_URL}/rest/v1${basePath}`, {
       headers: {
-        "apikey":        SUPABASE_SERVICE_KEY,
-        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+        ...supabaseAuthHeaders(),
         "Content-Type":  "application/json",
         "Range-Unit":    "items",
         "Range":         `${from}-${to}`,
@@ -131,9 +147,10 @@ async function supabaseFetchAll(basePath, pageSize = 1000, hardCap = 100000) {
     });
 
     if (!res.ok && res.status !== 206) {
-      // Supabase 가 JSON 에러를 돌려준 경우(테이블 없음·RLS 등). 진단용으로 상세를 담는다.
+      // Supabase 가 에러를 돌려준 경우(테이블 없음·RLS·인증 등). 상세는 서버 로그로만 남긴다.
       const errText = await res.text();
-      return { ok: false, status: res.status, data: all, detail: errText.slice(0, 300) };
+      console.error("Supabase 조회 실패:", res.status, errText.slice(0, 300));
+      return { ok: false, status: res.status, data: all };
     }
 
     const text = await res.text();
@@ -180,7 +197,7 @@ exports.handler = async function (event) {
   if (event.httpMethod === "GET") {
     // created_at 내림차순 = 최신 글이 위로.
     // 단일 요청의 행 수 상한(기본 1000) 때문에 누락되지 않도록 페이지네이션으로 전체 조회.
-    const { ok, data, parseError, status, detail } = await supabaseFetchAll(
+    const { ok, data, parseError } = await supabaseFetchAll(
       "/guestbook_entries?select=nickname,message,created_at&order=created_at.desc",
     );
 
@@ -189,16 +206,10 @@ exports.handler = async function (event) {
       const message = parseError
         ? "서버 설정 오류입니다. 관리자에게 문의해 주세요."
         : "방명록을 불러오지 못했습니다.";
-      // 임시 디버그: ?debug=1 일 때만 Supabase 원본 에러를 노출 (문제 확인 후 제거 예정)
-      const isDebug = (event.queryStringParameters || {}).debug === "1";
-      const payload = { error: message };
-      if (isDebug) {
-        payload.debug = { supabaseStatus: status, parseError: !!parseError, detail: detail || null };
-      }
       return {
         statusCode: parseError ? 503 : 502,
         headers: HEADERS,
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ error: message }),
       };
     }
 
