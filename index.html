@@ -101,6 +101,46 @@ footer{text-align:center;color:var(--mute);font-size:.9rem;padding:0 18px 56px}
 .gb-liststatus{color:var(--mute);text-align:center;padding:20px;font-size:.9rem}
 .gb-liststatus.gb-error{color:#e0423d}
 
+/* 연락처 */
+.contact-list{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.contact-list li{display:flex;gap:14px;align-items:flex-start}
+.contact-list b{font-weight:700}
+.contact-list a{color:var(--vio);text-decoration:none;word-break:break-all}
+.contact-list a:hover{text-decoration:underline}
+
+/* 퀴즈 */
+.quiz-lead{color:var(--mute);margin:0 0 18px}
+.quiz-progress{font-size:.8rem;color:var(--mute);font-weight:700;margin-bottom:8px}
+.quiz-question{font-size:1.05rem;font-weight:700;margin:0 0 16px}
+.quiz-options{display:flex;flex-direction:column;gap:10px}
+.quiz-opt{text-align:left;background:var(--bg);border:1.5px solid var(--line);border-radius:14px;color:var(--ink);font:inherit;font-size:.95rem;padding:12px 16px;cursor:pointer;transition:border-color .15s,background .15s}
+.quiz-opt:hover:not(:disabled){border-color:var(--vio)}
+.quiz-opt:disabled{cursor:default}
+.quiz-opt.correct{background:#e6f8ee;border-color:#1a9d5a;color:#12142b}
+.quiz-opt.wrong{background:#fdeaea;border-color:#e0423d;color:#12142b}
+.quiz-opt:focus-visible{outline:3px solid var(--vio);outline-offset:2px}
+.quiz-feedback{min-height:1.4em;font-size:.9rem;font-weight:600;margin:14px 0 0}
+.quiz-feedback.ok{color:#1a9d5a}
+.quiz-feedback.no{color:#e0423d}
+.quiz-result{text-align:center;padding:10px 0}
+.quiz-score{font-size:1.1rem;margin:0 0 6px}
+.quiz-score strong{color:var(--vio);font-size:1.6rem}
+.quiz-comment{color:var(--mute);margin:0 0 18px}
+.quiz-btn,.modal-ok{background:var(--vio);color:#fff;border:none;border-radius:999px;font:inherit;font-weight:700;padding:11px 26px;cursor:pointer;transition:opacity .15s,transform .1s}
+.quiz-btn:hover,.modal-ok:hover{opacity:.88;transform:translateY(-1px)}
+
+/* 환영 팝업 */
+.overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(12,14,43,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal{position:relative;background:var(--tile);color:var(--ink);border-radius:28px;padding:36px 30px 30px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:modal-in .25s ease}
+@keyframes modal-in{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.modal h2{margin:0 0 10px}
+.modal p{color:var(--mute);margin:0 0 22px}
+.modal-emoji{font-size:2.6rem;margin-bottom:8px}
+.modal-ok{width:100%}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.6rem;line-height:1;color:var(--mute);cursor:pointer;padding:4px}
+.modal-close:hover{color:var(--ink)}
+.modal-close:focus-visible,.modal-ok:focus-visible,.quiz-btn:focus-visible{outline:3px solid var(--vio);outline-offset:3px}
+
 @media (max-width:760px){
   .s4,.s3,.s2{grid-column:span 6}
   .hero{padding-top:44px}
@@ -120,6 +160,7 @@ footer{text-align:center;color:var(--mute);font-size:.9rem;padding:0 18px 56px}
     <li><a href="#qna">Q&amp;A</a></li>
     <li><a href="#contact">연락처</a></li>
     <li><a href="#guestbook">방명록</a></li>
+    <li><a href="#quiz">퀴즈</a></li>
   </ul>
 </nav>
 
@@ -199,7 +240,22 @@ footer{text-align:center;color:var(--mute);font-size:.9rem;padding:0 18px 56px}
 
 
   <section class="tile s3" id="contact">
-    
+    <h2>연락처</h2>
+    <p>궁금한 점이나 하고 싶은 말이 있다면 편하게 연락 주세요.</p>
+    <ul class="contact-list">
+      <li>
+        <span class="emo" aria-hidden="true">✉️</span>
+        <span><b>이메일</b><br><a href="mailto:yujinchangishere@kookmin.ac.kr">yujinchangishere@kookmin.ac.kr</a></span>
+      </li>
+      <li>
+        <span class="emo" aria-hidden="true">💻</span>
+        <span><b>GitHub</b><br><a href="https://github.com/yujin-a777" target="_blank" rel="noopener">github.com/yujin-a777</a></span>
+      </li>
+      <li>
+        <span class="emo" aria-hidden="true">🏫</span>
+        <span><b>소속</b><br>국민대학교 경영정보학부</span>
+      </li>
+    </ul>
   </section>
 
   <!-- ── 방명록 (메인 홈페이지 하단 섹션) ── -->
@@ -229,7 +285,38 @@ footer{text-align:center;color:var(--mute);font-size:.9rem;padding:0 18px 56px}
     </ul>
   </section>
 
+  <!-- ── 장유진 퀴즈 (흥미 유발) ── -->
+  <section class="tile" id="quiz" aria-label="장유진 퀴즈">
+    <h2>장유진 퀴즈 🎯</h2>
+    <p class="quiz-lead">저에 대해 얼마나 알고 계신가요? 5문제에 도전해 보세요!</p>
+
+    <div id="quiz-box">
+      <div class="quiz-progress"><span id="quiz-step">1</span> / <span id="quiz-total">5</span></div>
+      <p id="quiz-question" class="quiz-question"></p>
+      <div id="quiz-options" class="quiz-options"></div>
+      <p id="quiz-feedback" class="quiz-feedback" role="status" aria-live="polite"></p>
+    </div>
+
+    <div id="quiz-result" class="quiz-result" hidden>
+      <p class="quiz-score">점수: <strong id="quiz-score">0</strong> / 5</p>
+      <p id="quiz-comment" class="quiz-comment"></p>
+      <button id="quiz-restart" class="quiz-btn">다시 풀기</button>
+    </div>
+  </section>
+
 </main>
+
+<!-- ── 환영 팝업 (첫 방문 시 1회) ── -->
+<div id="welcome-overlay" class="overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+    <button id="welcome-close" class="modal-close" aria-label="닫기">×</button>
+    <div class="modal-emoji" aria-hidden="true">👋</div>
+    <h2 id="welcome-title">어서 오세요!</h2>
+    <p>국민대 경영정보학부 장유진의 홈페이지예요.<br>아래로 내려가면 <b>방명록</b>과 <b>퀴즈</b>도 있어요. 즐겨 주세요!</p>
+    <button id="welcome-ok" class="modal-ok">둘러보기</button>
+  </div>
+</div>
+
 <footer>다음 sprint: 사진 추가, 응원하는 팀·영화 추천 소개</footer>
 
 <script>
@@ -348,6 +435,126 @@ gbSubmit.addEventListener("click", gbSubmitEntry);
 // 초기화
 gbRefresh();
 gbLoad();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 장유진 퀴즈
+// ══════════════════════════════════════════════════════════════════════════════
+const QUIZ = [
+  { q: "장유진의 전공은?", options: ["경영정보학부", "컴퓨터공학부", "경제학과", "디자인학부"], answer: 0 },
+  { q: "장유진의 MBTI는?", options: ["INFP", "ESTJ", "ENTP", "ISFJ"], answer: 1 },
+  { q: "가장 좋아하는 스포츠는?", options: ["야구", "농구", "축구", "배구"], answer: 2 },
+  { q: "취미는 무엇일까요?", options: ["영화 보기", "등산", "게임", "요리"], answer: 0 },
+  { q: "다니는 학교는?", options: ["고려대학교", "국민대학교", "연세대학교", "한양대학교"], answer: 1 },
+];
+
+const quizStepEl = document.getElementById("quiz-step");
+const quizTotalEl = document.getElementById("quiz-total");
+const quizQEl = document.getElementById("quiz-question");
+const quizOptsEl = document.getElementById("quiz-options");
+const quizFeedEl = document.getElementById("quiz-feedback");
+const quizBoxEl = document.getElementById("quiz-box");
+const quizResultEl = document.getElementById("quiz-result");
+const quizScoreEl = document.getElementById("quiz-score");
+const quizCommentEl = document.getElementById("quiz-comment");
+const quizRestartBtn = document.getElementById("quiz-restart");
+
+let quizIndex = 0;
+let quizScore = 0;
+
+function quizRender() {
+  const item = QUIZ[quizIndex];
+  quizStepEl.textContent = String(quizIndex + 1);
+  quizTotalEl.textContent = String(QUIZ.length);
+  quizQEl.textContent = item.q;
+  quizFeedEl.textContent = "";
+  quizFeedEl.className = "quiz-feedback";
+  quizOptsEl.innerHTML = "";
+
+  item.options.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "quiz-opt";
+    btn.textContent = opt;              // ← textContent 로 안전하게 출력
+    btn.addEventListener("click", () => quizAnswer(i, btn));
+    quizOptsEl.appendChild(btn);
+  });
+}
+
+function quizAnswer(choice, btnEl) {
+  const item = QUIZ[quizIndex];
+  const buttons = Array.from(quizOptsEl.querySelectorAll(".quiz-opt"));
+  buttons.forEach((b) => (b.disabled = true));
+
+  buttons[item.answer].classList.add("correct");
+  if (choice === item.answer) {
+    quizScore++;
+    quizFeedEl.className = "quiz-feedback ok";
+    quizFeedEl.textContent = "정답이에요! 🎉";
+  } else {
+    btnEl.classList.add("wrong");
+    quizFeedEl.className = "quiz-feedback no";
+    quizFeedEl.textContent = "아쉬워요! 정답은 '" + item.options[item.answer] + "'예요.";
+  }
+
+  setTimeout(() => {
+    quizIndex++;
+    if (quizIndex < QUIZ.length) {
+      quizRender();
+    } else {
+      quizShowResult();
+    }
+  }, 1100);
+}
+
+function quizShowResult() {
+  quizBoxEl.hidden = true;
+  quizResultEl.hidden = false;
+  quizScoreEl.textContent = String(quizScore);
+  let comment;
+  if (quizScore === QUIZ.length) comment = "완벽해요! 저를 정말 잘 아시네요 👏";
+  else if (quizScore >= 3) comment = "꽤 잘 아시는데요? 😊";
+  else comment = "아직 저를 더 알아가 주세요! 😉";
+  quizCommentEl.textContent = comment;
+}
+
+quizRestartBtn.addEventListener("click", () => {
+  quizIndex = 0;
+  quizScore = 0;
+  quizResultEl.hidden = true;
+  quizBoxEl.hidden = false;
+  quizRender();
+});
+
+quizRender();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 환영 팝업 (첫 방문 시 1회만, localStorage 로 기억)
+// ══════════════════════════════════════════════════════════════════════════════
+const welcomeOverlay = document.getElementById("welcome-overlay");
+const welcomeClose = document.getElementById("welcome-close");
+const welcomeOk = document.getElementById("welcome-ok");
+
+function closeWelcome() {
+  welcomeOverlay.hidden = true;
+  try { localStorage.setItem("yj_welcomed", "1"); } catch (e) { /* 저장 불가 시 무시 */ }
+}
+
+let alreadyWelcomed = false;
+try { alreadyWelcomed = localStorage.getItem("yj_welcomed") === "1"; } catch (e) { alreadyWelcomed = false; }
+
+if (!alreadyWelcomed) {
+  welcomeOverlay.hidden = false;
+}
+welcomeClose.addEventListener("click", closeWelcome);
+welcomeOk.addEventListener("click", closeWelcome);
+// 바깥 영역 클릭 시 닫기
+welcomeOverlay.addEventListener("click", (e) => {
+  if (e.target === welcomeOverlay) closeWelcome();
+});
+// ESC 키로 닫기
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !welcomeOverlay.hidden) closeWelcome();
+});
 </script>
 </body>
 </html>
